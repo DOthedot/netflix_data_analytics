@@ -1,0 +1,38 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# OS and editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Logs and runtime
+logs/
+*.log
+
+# dbt
+netflix/target/
+netflix/dbt_packages/
+netflix/logs/
+
+# Secrets and local config (never commit credentials)
+.env
+.env.*
+!.env.example
+profiles.yml
+**/profiles.yml
+
+# Local / personal notes (keep out of public repo)
+work_related.txt
+*.local

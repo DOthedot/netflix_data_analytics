@@ -1,0 +1,19 @@
+version: 2
+
+sources:
+  - name: netflix
+    schema: raw
+    tables:
+      - name: r_movies
+        identifiers: raw_movies
+      - name: r_ratings
+        identifiers: raw_ratings
+      - name: r_tags
+        identifiers: raw_tags
+      - name: r_links 
+        identifiers: raw_links  
+      - name: r_genome_tags
+        identifiers: raw_genome_tags  
+      - name: r_genome_scores
+        identifiers: raw_genome_scores
+        
