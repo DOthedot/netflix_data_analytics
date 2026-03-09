@@ -1,8 +1,3 @@
--- select 
---     movie_id,
---     tag_id,
---     relevance_score
--- from {{ ref('fct_genome_scores') }}
--- where relevance_score <= 0   
-
-{{ full_table_null_check(ref('fct_genome_scores'))}}
+-- Custom test: asserts no row in fct_genome_scores has any NULL column.
+-- A result set with rows = test failure.
+{{ full_table_null_check(ref('fct_genome_scores')) }}

@@ -2,18 +2,44 @@ version: 2
 
 sources:
   - name: netflix
+    description: >
+      Raw MovieLens data loaded into Snowflake. Contains movies, user ratings,
+      user-applied tags, genome tags, genome relevance scores, and external links.
     schema: raw
+    database: movielens
+
+    # Source freshness: uncomment loaded_at_field once you add an ingestion
+    # audit column (e.g. via Fivetran, Airbyte, or a custom loader).
+    # loaded_at_field: _loaded_at
+    # freshness:
+    #   warn_after:  {count: 7,  period: day}
+    #   error_after: {count: 30, period: day}
+
     tables:
       - name: r_movies
-        identifiers: raw_movies
+        identifier: raw_movies
+        description: Raw movie metadata — movieId, title (with year), pipe-separated genres.
+
       - name: r_ratings
-        identifiers: raw_ratings
+        identifier: raw_ratings
+        description: >
+          User–movie ratings (0.5–5.0 in 0.5 increments) with Unix epoch timestamp.
+          ~20 million rows in ml-20m.
+
       - name: r_tags
-        identifiers: raw_tags
-      - name: r_links 
-        identifiers: raw_links  
+        identifier: raw_tags
+        description: Free-text tags applied by users to movies, with timestamp.
+
+      - name: r_links
+        identifier: raw_links
+        description: Cross-reference of MovieLens movieId to IMDb and TMDb identifiers.
+
       - name: r_genome_tags
-        identifiers: raw_genome_tags  
+        identifier: raw_genome_tags
+        description: Controlled vocabulary of ~1 128 genome tag labels.
+
       - name: r_genome_scores
-        identifiers: raw_genome_scores
-        
+        identifier: raw_genome_scores
+        description: >
+          Relevance score (0–1) for each (movie, genome tag) pair. Dense matrix
+          covering ~10 000 movies × ~1 128 tags.

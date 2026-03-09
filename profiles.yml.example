@@ -1,0 +1,38 @@
+# Copy this file to ~/.dbt/profiles.yml and fill in your credentials.
+# NEVER commit the real profiles.yml — it is listed in .gitignore.
+#
+# Reference: https://docs.getdbt.com/reference/warehouse-profiles/snowflake-profile
+
+netflix:
+  target: dev
+  outputs:
+
+    dev:
+      type: snowflake
+      account: "<org>-<account>"          # e.g. xy12345.us-east-1
+      user: "<your_user>"
+      # Choose ONE authentication method:
+      password: "<your_password>"          # password auth
+      # authenticator: externalbrowser    # SSO / Okta
+      # private_key_path: ~/.ssh/rsa_key.p8   # key-pair auth
+
+      role: TRANSFORMER                    # role with CREATE TABLE on target schemas
+      warehouse: COMPUTE_WH
+      database: MOVIELENS
+      schema: dev_<your_name>             # personal dev schema prefix
+      threads: 4
+      client_session_keep_alive: false
+
+    prod:
+      type: snowflake
+      account: "<org>-<account>"
+      user: "<service_account>"
+      # Use key-pair or OAuth in production — never passwords
+      private_key_path: /secrets/rsa_key.p8
+      private_key_passphrase: "{{ env_var('DBT_PRIVATE_KEY_PASSPHRASE') }}"
+      role: TRANSFORMER
+      warehouse: COMPUTE_WH
+      database: MOVIELENS
+      schema: analytics                   # production schema
+      threads: 8
+      client_session_keep_alive: false

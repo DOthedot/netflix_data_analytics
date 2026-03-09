@@ -1,0 +1,77 @@
+version: 2
+
+models:
+  - name: src_movies
+    description: Staged movie metadata — renamed columns, no other transforms.
+    columns:
+      - name: movie_id
+        description: Unique MovieLens movie identifier (integer).
+        tests: [not_null, unique]
+      - name: title
+        description: Raw title string including "(year)" suffix.
+        tests: [not_null]
+      - name: genres
+        description: Pipe-separated genre string from source (e.g. "Action|Comedy").
+        tests: [not_null]
+
+  - name: src_ratings
+    description: Staged user ratings — Unix timestamp converted to LTZ.
+    columns:
+      - name: user_id
+        description: Anonymous user identifier.
+        tests: [not_null]
+      - name: movie_id
+        description: Movie being rated.
+        tests: [not_null]
+      - name: rating
+        description: Rating value (0.5–5.0).
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.5
+              max_value: 5.0
+      - name: rating_timestamp
+        description: Timestamp (LTZ) when rating was submitted.
+        tests: [not_null]
+
+  - name: src_tags
+    description: Staged user-applied tags — normalised to lowercase, nulls dropped.
+    columns:
+      - name: user_id
+        tests: [not_null]
+      - name: movie_id
+        tests: [not_null]
+      - name: tag
+        description: Lower-cased, trimmed tag string.
+        tests: [not_null]
+      - name: tag_timestamp
+        description: Timestamp (LTZ) when tag was applied.
+
+  - name: src_genome_score
+    description: Staged genome relevance scores — renamed columns only.
+    columns:
+      - name: movie_id
+        tests: [not_null]
+      - name: tag_id
+        tests: [not_null]
+      - name: relevance
+        description: Raw relevance score (0–1).
+        tests: [not_null]
+
+  - name: src_genome_tags
+    description: Staged genome tag vocabulary.
+    columns:
+      - name: tag_id
+        tests: [not_null, unique]
+      - name: tag
+        tests: [not_null]
+
+  - name: src_links
+    description: External identifier cross-reference (IMDb, TMDb).
+    columns:
+      - name: movie_id
+        tests: [not_null, unique]
+      - name: imdb_id
+        description: IMDb numeric identifier (without "tt" prefix).
+      - name: tmdb_id
+        description: TMDb numeric identifier.

@@ -1,0 +1,39 @@
+version: 2
+
+models:
+  - name: dim_movies
+    description: >
+      Dimension table for movie metadata. Title is cleaned (year suffix removed),
+      release year is extracted, and genres are split into an array.
+    columns:
+      - name: movie_id
+        description: Primary key.
+        tests: [not_null, unique]
+      - name: movie_title
+        description: Clean movie title without year suffix.
+        tests: [not_null]
+      - name: release_year
+        description: 4-digit year extracted from the original title string.
+      - name: genre_array
+        description: Array of genre strings (VARIANT on Snowflake).
+      - name: genres
+        description: Raw pipe-separated genre string.
+
+  - name: dim_users
+    description: >
+      Dimension of unique users derived from the union of raters and taggers.
+      Contains no PII — user IDs are anonymous integers.
+    columns:
+      - name: user_id
+        description: Unique anonymous user identifier.
+        tests: [not_null, unique]
+
+  - name: dim_genome_tags
+    description: Controlled genome tag vocabulary with cleaned labels.
+    columns:
+      - name: tag_id
+        description: Primary key.
+        tests: [not_null, unique]
+      - name: tag_name
+        description: Title-cased, trimmed tag label.
+        tests: [not_null]

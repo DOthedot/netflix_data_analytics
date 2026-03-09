@@ -1,0 +1,73 @@
+version: 2
+
+models:
+  - name: fct_ratings
+    description: >
+      Incremental fact table of user–movie ratings. Each row is one rating event.
+      Surrogate key is a hash of (user_id, movie_id, rating_timestamp).
+    columns:
+      - name: rating_id
+        description: Surrogate primary key (MD5 hash).
+        tests: [not_null, unique]
+      - name: user_id
+        description: FK → dim_users.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_users')
+              field: user_id
+      - name: movie_id
+        description: FK → dim_movies.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_movies')
+              field: movie_id
+      - name: rating
+        description: Rating value (0.5–5.0).
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.5
+              max_value: 5.0
+      - name: rating_timestamp
+        description: Timestamp (LTZ) when the rating was submitted.
+        tests: [not_null]
+      - name: rating_month
+        description: Month-truncated timestamp for time-series aggregations.
+      - name: rating_year
+        description: Calendar year of the rating.
+
+  - name: fct_genome_scores
+    description: >
+      Fact table of genome relevance scores. Each row represents the strength
+      of association between one movie and one genome tag.
+    columns:
+      - name: movie_id
+        description: FK → dim_movies.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_movies')
+              field: movie_id
+      - name: tag_id
+        description: FK → dim_genome_tags.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_genome_tags')
+              field: tag_id
+      - name: relevance_score
+        description: Relevance score rounded to 4 decimal places (0–1).
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+              inclusive: true
+      - name: relevance_tier
+        description: Categorical band — very high / high / medium / low.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['very high', 'high', 'medium', 'low']

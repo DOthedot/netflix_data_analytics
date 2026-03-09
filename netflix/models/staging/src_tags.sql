@@ -1,15 +1,10 @@
-{{
-    config(
-        materialized = 'table',
-    )
-}}
-
 with raw_tags as (
-    select * from movielens.raw.raw_tags
+    select * from {{ source('netflix', 'r_tags') }}
 )
-select 
-    userId as user_id,
-    movieId as movie_id,
-    tag,
-    to_timestamp_ltz(timestamp) as tag_timestamp
+select
+    userId                          as user_id,
+    movieId                         as movie_id,
+    lower(trim(tag))                as tag,
+    to_timestamp_ltz(timestamp)     as tag_timestamp
 from raw_tags
+where tag is not null

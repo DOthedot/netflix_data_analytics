@@ -1,15 +1,18 @@
 [project]
 name = "netflix-data-analysis"
-version = "0.1.0"
-description = "dbt project for MovieLens/Netflix-style analytics on Snowflake"
+version = "1.0.0"
+description = "dbt + Snowflake dimensional warehouse for MovieLens analytics"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "dbt-core>=1.11.2",
-    "dbt-snowflake>=1.11.1",
+    "dbt-core>=1.9.0",
+    "dbt-snowflake>=1.9.0",
 ]
 
-[tool.uv.workspace]
-members = [
-    "netflix/models/staging",
+[tool.uv]
+dev-dependencies = [
+    "pre-commit>=4.0.0",
 ]
+
+[tool.ruff]
+line-length = 120

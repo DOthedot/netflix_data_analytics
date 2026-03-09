@@ -1,38 +1,71 @@
-
-# Name your project! Project names should contain only lowercase characters
-# and underscores. A good package name should reflect your organization's
-# name or the intended use of these models
 name: 'netflix'
 version: '1.0.0'
+config-version: 2
 
-# This setting configures which "profile" dbt uses for this project.
 profile: 'netflix'
 
-# These configurations specify where dbt should look for different types of files.
-# The `model-paths` config, for example, states that models in this project can be
-# found in the "models/" directory. You probably won't need to change these!
-model-paths: ["models"]
-analysis-paths: ["analyses"]
-test-paths: ["tests"]
-seed-paths: ["seeds"]
-macro-paths: ["macros"]
-snapshot-paths: ["snapshots"]
+# Path configurations
+model-paths:     ["models"]
+analysis-paths:  ["analyses"]
+test-paths:      ["tests"]
+seed-paths:      ["seeds"]
+macro-paths:     ["macros"]
+snapshot-paths:  ["snapshots"]
 
-clean-targets:         # directories to be removed by `dbt clean`
+clean-targets:
   - "target"
   - "dbt_packages"
 
+# Global variable defaults (override with --vars '{"key": "value"}' on CLI)
+vars:
+  min_rating_count: 50       # minimum ratings threshold used in mart models
+  min_relevance_score: 0.0   # genome score floor
 
-# Configuring models
-# Full documentation: https://docs.getdbt.com/docs/configuring-models
-
-# In this example config, we tell dbt to build all models in the example/
-# directory as views. These settings can be overridden in the individual model
-# files using the `{{ config(...) }}` macro.
+# -----------------------------------------------------------------------
+# Model materializations & tags
+# -----------------------------------------------------------------------
 models:
   netflix:
-    +materialized: view
+    +persist_docs:
+      relation: true
+      columns: true
+
+    staging:
+      +materialized: view
+      +schema: staging
+      +tags: ["staging"]
+
     dim:
       +materialized: table
+      +schema: dim
+      +tags: ["dim"]
+
     fct:
-      +materialized: table 
+      # Default is table; fct_ratings overrides to incremental in its own config block
+      +materialized: table
+      +schema: fct
+      +tags: ["fct"]
+
+    mart:
+      +materialized: table
+      +schema: mart
+      +tags: ["mart"]
+
+# -----------------------------------------------------------------------
+# Seed configuration
+# -----------------------------------------------------------------------
+seeds:
+  netflix:
+    +schema: seeds
+    seed_movie_release_dates:
+      +column_types:
+        movie_id: integer
+        release_date: date
+
+# -----------------------------------------------------------------------
+# Snapshot configuration
+# -----------------------------------------------------------------------
+snapshots:
+  netflix:
+    +target_schema: snapshots
+    +tags: ["snapshot"]

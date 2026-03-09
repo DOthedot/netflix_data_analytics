@@ -1,0 +1,70 @@
+version: 2
+
+models:
+  - name: mart_top_rated_movies
+    description: >
+      Analytics-ready table of top-rated movies using a Bayesian average.
+      Only includes movies that meet the min_rating_count threshold (default 50).
+    columns:
+      - name: movie_id
+        tests: [not_null, unique]
+      - name: movie_title
+        tests: [not_null]
+      - name: total_ratings
+        tests: [not_null]
+      - name: bayesian_avg_rating
+        description: Shrinkage-adjusted rating to account for low-vote movies.
+        tests: [not_null]
+      - name: overall_rank
+        description: Rank by Bayesian average (1 = highest rated).
+        tests: [not_null]
+
+  - name: mart_genre_performance
+    description: >
+      Yearly genre-level aggregations: volume, unique users, avg rating.
+      Rows are at (genre, rating_year) grain.
+    columns:
+      - name: genre
+        tests: [not_null]
+      - name: rating_year
+        tests: [not_null]
+      - name: total_ratings
+        tests: [not_null]
+
+  - name: mart_user_activity
+    description: >
+      User-level engagement summary combining rating and tagging behaviour.
+      One row per user. Includes a user_segment label.
+    columns:
+      - name: user_id
+        tests: [not_null, unique]
+      - name: user_segment
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['power', 'regular', 'casual', 'light']
+
+  - name: mart_movie_release_dates
+    description: >
+      Movie catalogue enriched with seed release dates and headline rating stats.
+      Useful as a single denormalised table for BI tools.
+    columns:
+      - name: movie_id
+        tests: [not_null, unique]
+      - name: release_info_status
+        tests:
+          - accepted_values:
+              values: ['known', 'unknown']
+
+  - name: mart_movies_enriched
+    description: >
+      Wide table joining movie metadata, genome tag scores, and external links
+      (IMDb/TMDb). One row per (movie, tag) pair. Suitable for recommendation
+      feature engineering and content-based filtering.
+    columns:
+      - name: movie_id
+        tests: [not_null]
+      - name: movie_title
+        tests: [not_null]
+      - name: is_strong_tag
+        description: True when relevance_score >= 0.5.

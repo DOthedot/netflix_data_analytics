@@ -1,0 +1,170 @@
+name: dbt CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DBT_DATABASE: MOVIELENS
+
+jobs:
+  # ──────────────────────────────────────────────────────────────────────────
+  # 1. Lint & parse
+  # ──────────────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint (ruff + sqlfluff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run ruff
+        run: uv run ruff check .
+
+      - name: Install sqlfluff
+        run: uv run pip install sqlfluff sqlfluff-templater-dbt
+
+      - name: Lint SQL with sqlfluff
+        working-directory: netflix
+        run: |
+          uv run sqlfluff lint models/ \
+            --dialect snowflake \
+            --templater dbt \
+            --exclude-rules L034,L042
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 2. dbt parse (no DB connection needed)
+  # ──────────────────────────────────────────────────────────────────────────
+  dbt-parse:
+    name: dbt parse
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Write CI profiles.yml
+        run: |
+          mkdir -p ~/.dbt
+          cat > ~/.dbt/profiles.yml << 'PROFILE'
+          netflix:
+            target: ci
+            outputs:
+              ci:
+                type: snowflake
+                account: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+                user:    ${{ secrets.SNOWFLAKE_USER }}
+                password: ${{ secrets.SNOWFLAKE_PASSWORD }}
+                role:     ${{ secrets.SNOWFLAKE_ROLE }}
+                warehouse: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+                database: MOVIELENS
+                schema:   ci_${{ github.run_id }}
+                threads:  4
+          PROFILE
+
+      - name: dbt deps
+        working-directory: netflix
+        run: uv run dbt deps
+
+      - name: dbt parse
+        working-directory: netflix
+        run: uv run dbt parse --profiles-dir ~/.dbt
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 3. dbt run + test (requires Snowflake secrets)
+  # ──────────────────────────────────────────────────────────────────────────
+  dbt-test:
+    name: dbt run + test
+    runs-on: ubuntu-latest
+    needs: dbt-parse
+    # Only run on push to main or PRs with the "run-integration" label
+    if: >
+      github.event_name == 'push' ||
+      contains(github.event.pull_request.labels.*.name, 'run-integration')
+    environment: ci
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Write CI profiles.yml
+        run: |
+          mkdir -p ~/.dbt
+          cat > ~/.dbt/profiles.yml << 'PROFILE'
+          netflix:
+            target: ci
+            outputs:
+              ci:
+                type: snowflake
+                account: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+                user:    ${{ secrets.SNOWFLAKE_USER }}
+                password: ${{ secrets.SNOWFLAKE_PASSWORD }}
+                role:     ${{ secrets.SNOWFLAKE_ROLE }}
+                warehouse: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+                database: MOVIELENS
+                schema:   ci_${{ github.run_id }}
+                threads:  4
+          PROFILE
+
+      - name: dbt deps
+        working-directory: netflix
+        run: uv run dbt deps
+
+      - name: dbt seed
+        working-directory: netflix
+        run: uv run dbt seed --profiles-dir ~/.dbt
+
+      - name: dbt run
+        working-directory: netflix
+        run: uv run dbt run --profiles-dir ~/.dbt
+
+      - name: dbt test
+        working-directory: netflix
+        run: uv run dbt test --profiles-dir ~/.dbt
+
+      - name: dbt source freshness
+        working-directory: netflix
+        run: uv run dbt source freshness --profiles-dir ~/.dbt
+
+      - name: Cleanup CI schemas
+        if: always()
+        working-directory: netflix
+        run: |
+          uv run dbt run-operation drop_ci_schemas \
+            --args "{'schema_prefix': 'ci_${{ github.run_id }}'}" \
+            --profiles-dir ~/.dbt || true
