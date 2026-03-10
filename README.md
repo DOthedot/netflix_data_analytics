@@ -2,7 +2,7 @@
 
 # Netflix / MovieLens Data Warehouse
 
-**Production-grade dimensional model — dbt Core + Snowflake**
+**Dimensional Data model — dbt Core + Snowflake**
 
 [![dbt](https://img.shields.io/badge/dbt-Core%201.9+-FF694B?style=flat-square&logo=dbt&logoColor=white)](https://www.getdbt.com/)
 [![Snowflake](https://img.shields.io/badge/Snowflake-Data%20Warehouse-29B5E8?style=flat-square&logo=snowflake&logoColor=white)](https://www.snowflake.com/)
@@ -164,7 +164,7 @@ netflix_data_analysis/
 ### 1. Clone & install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/netflix_data_analysis.git
+git clone https://github.com/DOthedot/netflix_data_analysis.git
 cd netflix_data_analysis
 uv sync
 ```
